@@ -8,6 +8,7 @@ import cwlib.types.data.GUID
 import cwlib.types.data.NetworkPlayerID
 import cwlib.types.data.ResourceDescriptor
 import cwlib.types.data.Revision
+import cwlib.types.databases.FileDB
 import cwlib.util.FileIO
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
@@ -16,6 +17,8 @@ import kotlinx.cli.required
 import org.joml.Matrix4f
 import org.joml.Vector3f
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 
 
 const val startx = -19162.5f
@@ -94,9 +97,26 @@ fun parseSimpleFile(filePath: String): ArrayList<Long> {
     return output
 }
 
-fun parseSourceFile(filePath: String): List<Long> {
+fun parseRLST(filePath: String, gameRoot: String): List<Long> {
+    val output = arrayListOf<Long>()
+    val fileDB = FileDB(Paths.get(gameRoot, "output", "blurayguids.map").toFile())
+    val lines: List<String> = Files.readAllLines(Paths.get(filePath))
+    for (line in lines) {
+        if (line.isEmpty()) continue
+        try {
+            output.add(fileDB[line.trim()].guid.value)
+        } catch (e: Exception) {
+            println("Invalid resource: $line")
+        }
+    }
+    return output
+}
+
+fun parseSourceFile(filePath: String, gameRoot: String?): List<Long> {
     if (filePath.endsWith(".txt"))
         return parseSimpleFile(filePath)
+    else if (filePath.endsWith(".rlst"))
+        return parseRLST(filePath, gameRoot!!)
     else
         throw IllegalArgumentException("File extension is unknown")
 }
@@ -121,8 +141,14 @@ fun main(args: Array<String>) {
         shortName = "o",
         description = "The output file to use"
     )
+    val gameRoot by parser.option(
+        ArgType.String,
+        fullName = "gameroot",
+        shortName = "C",
+        description = "The game root to use (USRDIR, not a specific farc/map)"
+    )
     parser.parse(args)
-    val bubbles = parseSourceFile(sourceFile)
+    val bubbles = parseSourceFile(sourceFile, gameRoot)
     level = SerializedResource(object {}::class.java.getResourceAsStream("custom_level.bin")!!.readAllBytes()).loadResource<RLevel>(
     RLevel::class.java)
     for (i in 0..level.playerRecord.playerIDs.size - 1) {
