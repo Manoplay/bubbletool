@@ -16,3 +16,9 @@ Produces a level which you can add to the bigfart and load in LittleBigPlanet.
 
 ## Note
 Only loads items references by GUID and not by Hash, for now.
+
+## Dependencies and credits
+This is both a credit and a dependency note: this project DEPENDS on toolkit by ennuo (https://github.com/ennuo/toolkit). Before building, make sure to clone toolkit, and run
+> mvn clean install
+
+This way maven can find toolkit and their classes, which are used in this project for level (de)serialization!
